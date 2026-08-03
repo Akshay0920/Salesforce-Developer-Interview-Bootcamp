@@ -1,0 +1,9 @@
+public class ApplicationService {
+
+    public static String submitApplication(Id studentId, Id jobId) {
+
+        return 'Application request received successfully.';
+
+    }
+
+}
