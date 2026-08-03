@@ -60,16 +60,9 @@ Application request received successfully.
 
 # Screenshots
 
-## ApplicationService Method
-
-![ApplicationService Method](code.jpeg)
-
----
-
-
 ## Debug Output
 
-![Debug Output](Duplicate_Application.jpeg)
+![ApplicationService Method](code.jpeg)
 
 ---
 
