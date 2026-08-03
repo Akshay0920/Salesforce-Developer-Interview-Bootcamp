@@ -1,0 +1,58 @@
+public class ApplicationService {
+
+    public static String submitApplication(Id studentId, Id jobId) {
+
+        // Duplicate Check
+        List<Application__c> existingApplications = [
+            SELECT Id
+            FROM Application__c
+            WHERE Student__c = :studentId
+            AND Job__c = :jobId
+            LIMIT 1
+        ];
+
+        if (!existingApplications.isEmpty()) {
+            return 'You have already applied for this job.';
+        }
+
+        // Get Student Details
+        Student__c student = [
+            SELECT CGPA__c,
+                   Backlogs__c,
+                   Branch__c,
+                   Graduation_Year__c
+            FROM Student__c
+            WHERE Id = :studentId
+            LIMIT 1
+        ];
+
+        // Get Job Details
+        Job__c job = [
+            SELECT Minimum_CGPA__c,
+                   Allowed_Branch__c,
+                   Graduation_Year__c
+            FROM Job__c
+            WHERE Id = :jobId
+            LIMIT 1
+        ];
+
+        // Eligibility Checks
+        if (student.CGPA__c < job.Minimum_CGPA__c) {
+            return 'Application rejected: CGPA is below the minimum requirement.';
+        }
+
+        if (student.Backlogs__c > 0) {
+            return 'Application rejected: Student has active backlogs.';
+        }
+
+        if (student.Branch__c != job.Allowed_Branch__c) {
+            return 'Application rejected: Branch is not eligible.';
+        }
+
+        if (student.Graduation_Year__c != job.Graduation_Year__c) {
+            return 'Application rejected: Graduation year is not eligible.';
+        }
+
+        return 'Student is eligible. Application received successfully.';
+    }
+}
