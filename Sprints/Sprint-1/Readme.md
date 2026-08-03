@@ -1,15 +1,5 @@
 # Engineering Sprint 1 – Creating the Application Service
 
-## Student Details
-
-**Name:** Akshay Sainam
-
-**Technology:** Salesforce Apex
-
-**Project:** Placement Management System
-
----
-
 # Sprint Objective
 
 Create a dedicated Apex service class named **ApplicationService** that will handle all application-related business operations in future sprints.
