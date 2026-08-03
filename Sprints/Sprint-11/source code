@@ -1,0 +1,107 @@
+public class ApplicationService {
+
+    public static String submitApplication(Id studentId, Id jobId) {
+
+        // Retrieve Student
+        Student__c student = getStudent(studentId);
+
+        // Retrieve Job
+        Job__c job = getJob(jobId);
+
+        // Duplicate Check
+        if (isDuplicateApplication(studentId, jobId)) {
+            return 'You have already applied for this job.';
+        }
+
+        // Eligibility Validation
+        if (student.CGPA__c < job.Minimum_CGPA__c) {
+            return 'Student is not eligible due to low CGPA.';
+        }
+
+        // Save Application
+        try {
+
+            createApplication(studentId, jobId);
+
+            return 'Application submitted successfully.';
+
+        } catch (DmlException e) {
+
+            return 'Failed to save application: ' + e.getMessage();
+
+        }
+    }
+
+    private static Student__c getStudent(Id studentId) {
+
+        return [
+            SELECT CGPA__c
+            FROM Student__c
+            WHERE Id = :studentId
+            LIMIT 1
+        ];
+
+    }
+
+    private static Job__c getJob(Id jobId) {
+
+        return [
+            SELECT Minimum_CGPA__c
+            FROM Job__c
+            WHERE Id = :jobId
+            LIMIT 1
+        ];
+
+    }
+
+    private static Boolean isDuplicateApplication(Id studentId, Id jobId) {
+
+        Integer countApplications = [
+            SELECT COUNT()
+            FROM Application__c
+            WHERE Student__c = :studentId
+            AND Job__c = :jobId
+        ];
+
+        return countApplications > 0;
+
+    }
+
+    private static void createApplication(Id studentId, Id jobId) {
+
+        Application__c application = new Application__c();
+
+        application.Student__c = studentId;
+        application.Job__c = jobId;
+        application.Application_Date__c = Date.today();
+
+        insert application;
+
+    }
+    
+    public static String updateApplicationStatus(Id applicationId, String newStatus) {
+
+    try {
+
+        Application__c application = [
+            SELECT Id, Status__c
+            FROM Application__c
+            WHERE Id = :applicationId
+            LIMIT 1
+        ];
+
+        application.Status__c = newStatus;
+
+        update application;
+
+        return 'Application status updated successfully.';
+
+    } catch (DmlException e) {
+
+        return 'Failed to update application status: ' + e.getMessage();
+
+    }
+
+}
+
+}
