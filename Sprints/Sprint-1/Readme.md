@@ -36,7 +36,7 @@ public class ApplicationService {
 
 # Screenshot
 
-![ApplicationService Class](screenshots/application-service.png)
+![ApplicationService Class](application-service.jpeg)
 
 
 ---
