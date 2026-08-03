@@ -1,0 +1,19 @@
+public class ApplicationService {
+
+    public static String submitApplication(Id studentId, Id jobId) {
+
+        List<Application__c> existingApplications = [
+            SELECT Id
+            FROM Application__c
+            WHERE Student__c = :studentId
+            AND Job__c = :jobId
+            LIMIT 1
+        ];
+
+        if (!existingApplications.isEmpty()) {
+            return 'You have already applied for this job.';
+        }
+
+        return 'Application request received successfully.';
+    }
+}
