@@ -53,14 +53,6 @@ Save Record
 Display Confirmation
 ```
 
----
-
-# Source Code
-
-See **Source-Code/ApplicationService.cls**
-
----
-
 # Expected Behaviour
 
 The application successfully performs the complete business transaction from receiving the request to storing the application record.
