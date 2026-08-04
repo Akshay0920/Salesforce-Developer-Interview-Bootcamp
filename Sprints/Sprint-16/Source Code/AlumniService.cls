@@ -4,7 +4,7 @@ public class AlumniService {
 
         for(Application__c app : applications){
 
-            if(app.Status__c == 'Offer Accepted'){
+            if(app.Status__c == 'Rejected'){
 
                 System.debug('Alumni Office notified for Student: ' + app.Student__c);
 
