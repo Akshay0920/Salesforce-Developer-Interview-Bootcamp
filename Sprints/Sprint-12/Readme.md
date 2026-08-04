@@ -63,7 +63,7 @@ The application successfully performs the complete business transaction from rec
 
 ## Debug Output
 
-![Debug Output](bb.png)
+![Debug Output](application_submitted.png)
 
 
 # Learning Outcome
