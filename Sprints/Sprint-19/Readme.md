@@ -74,7 +74,7 @@ When an Application status changes to **Selected**:
 
 ## Selected Application
 
-![Selected Application](Screenshots/selected.png)
+![Selected Application](Screenshots/Selected.png)
 
 ---
 
