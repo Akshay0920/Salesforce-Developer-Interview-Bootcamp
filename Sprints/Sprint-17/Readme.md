@@ -68,25 +68,25 @@ The application successfully validates one or multiple application records in a 
 
 ## Valid Application
 
-![Valid Application](Screenshots/valid application.png)
+![Valid Application](Screenshots/valid-application.png)
 
 ---
 
 ## Low CGPA Validation
 
-![Low CGPA](Screenshots/low cgpa.png)
+![Low CGPA](Screenshots/low-cgpa.png)
 
 ---
 
 ## Wrong Branch Validation
 
-![Wrong Branch](Screenshots/wrong branch.png)
+![Wrong Branch](Screenshots/wrong-branch.png)
 
 ---
 
 ## More Backlogs Validation
 
-![More Backlogs](Screenshots/more backlogs.png)
+![More Backlogs](Screenshots/more-backlogs.png)
 
 ---
 
