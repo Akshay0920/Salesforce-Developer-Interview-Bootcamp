@@ -168,11 +168,11 @@ The Apply action also uses a submission state to prevent unnecessary repeated re
 
 ## Application Created
 
-![Application Created](Screenshots/application-created.png)
+![Application Created](Screenshots/Application-created.png)
 
 ## Apply Workflow
 
-![Apply Successful](Screenshots/apply-successful.png)
+![Apply Successful](Screenshots/Apply-successful.png)
 
 ## Duplicate Application Validation
 
