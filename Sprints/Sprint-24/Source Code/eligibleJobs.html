@@ -1,0 +1,97 @@
+<template>
+
+    <lightning-card title="Eligible Jobs">
+
+        <div class="slds-p-around_medium">
+
+            <!-- Error -->
+            <template if:true={error}>
+
+                <div class="slds-text-color_error slds-p-around_medium">
+
+                    Unable to load eligible jobs.
+
+                </div>
+
+            </template>
+
+
+            <!-- Jobs -->
+            <template if:true={jobs}>
+
+                <template for:each={jobs} for:item="job">
+
+                    <article key={job.Id} class="slds-card slds-p-around_medium slds-m-bottom_medium">
+
+                        <h2 class="slds-text-heading_medium">
+                            {job.Company__c}
+                        </h2>
+
+                        <p class="slds-m-top_small">
+                            Role: {job.Job_Name__c}
+                        </p>
+
+                        <p>
+                            Minimum CGPA:
+                            {job.Minimum_CGPA__c}
+                        </p>
+
+                        <p>
+                            Allowed Branch:
+                            {job.Allowed_Branch__c}
+                        </p>
+
+                        <p>
+                            Allowed Backlogs:
+                            {job.Allowed_Backlogs__c}
+                        </p>
+
+                        <p>
+                            Closing Date:
+                            {job.Closing_Date__c}
+                        </p>
+
+                        <p>
+                            Status:
+                            {job.Status__c}
+                        </p>
+
+                        <div class="slds-m-top_medium">
+
+                    <lightning-button
+                        label="Apply"
+                        variant="brand"
+                        data-job-id={job.Id}
+                        onclick={handleApply}
+                        disabled={isSubmitting}>
+                    </lightning-button>
+
+                        </div>
+
+                    </article>
+
+                </template>
+
+            </template>
+
+
+            <!-- No eligible jobs -->
+            <template if:false={jobs.length}>
+
+                <template if:false={error}>
+
+                    <div class="slds-align_absolute-center slds-p-around_medium">
+
+                        No eligible jobs are currently available.
+
+                    </div>
+
+                </template>
+
+            </template>
+
+        </div>
+
+    </lightning-card>
+
+</template>
