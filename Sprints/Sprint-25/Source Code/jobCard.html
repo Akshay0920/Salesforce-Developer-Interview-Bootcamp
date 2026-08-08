@@ -1,0 +1,120 @@
+<template>
+
+    <lightning-card title={job.Job_Name__c}>
+
+        <div class="slds-p-around_small">
+
+            <p>
+                <strong>Company:</strong>
+                {job.Company__c}
+            </p>
+
+            <p>
+                <strong>Minimum CGPA:</strong>
+                {job.Minimum_CGPA__c}
+            </p>
+
+            <p>
+                <strong>Allowed Branch:</strong>
+                {job.Allowed_Branch__c}
+            </p>
+
+            <p>
+                <strong>Allowed Backlogs:</strong>
+                {job.Allowed_Backlogs__c}
+            </p>
+
+            <p>
+                <strong>Closing Date:</strong>
+                {job.Closing_Date__c}
+            </p>
+
+            <p>
+                <strong>Status:</strong>
+                {job.Status__c}
+            </p>
+
+
+            <!-- STATE 1: READY -->
+
+            <template if:true={showReadyState}>
+
+                <div class="slds-m-top_medium">
+
+                    <lightning-button
+                        label="Apply"
+                        variant="brand"
+                        onclick={handleApply}>
+                    </lightning-button>
+
+                </div>
+
+            </template>
+
+
+            <!-- STATE 2: SUBMITTING -->
+
+            <template if:true={showSubmittingState}>
+
+                <div class="slds-m-top_medium">
+
+                    <lightning-spinner
+                        alternative-text="Submitting application"
+                        size="small">
+                    </lightning-spinner>
+
+                    <p class="slds-m-top_small">
+                        Submitting...
+                    </p>
+
+                    <p>
+                        Processing your application.
+                    </p>
+
+                </div>
+
+            </template>
+
+
+            <!-- STATE 3: SUCCESS -->
+
+            <template if:true={showSuccessState}>
+
+                <div class="slds-m-top_medium slds-text-color_success">
+
+                    <p class="slds-text-heading_small">
+                        ✓ APPLICATION SUBMITTED
+                    </p>
+
+                    <p class="slds-m-top_small">
+                        Your application was submitted successfully.
+                    </p>
+
+                </div>
+
+            </template>
+
+
+            <!-- STATE 4: FAILURE -->
+
+            <template if:true={showFailureState}>
+
+                <div class="slds-m-top_medium slds-text-color_error">
+
+                    <p class="slds-text-heading_small">
+                        Application could not be submitted.
+                    </p>
+
+                    <p class="slds-m-top_small">
+                        {errorMessage}
+                    </p>
+
+                </div>
+
+            </template>
+
+        </div>
+
+    </lightning-card>
+
+</template>
