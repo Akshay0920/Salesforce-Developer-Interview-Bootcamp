@@ -1,0 +1,143 @@
+<template>
+
+    <lightning-card>
+
+        <div class="slds-p-around_medium">
+
+            <h2 class="slds-text-heading_medium">
+                {job.Company__c}
+            </h2>
+
+            <p class="slds-m-top_small">
+                Role: {job.Job_Name__c}
+            </p>
+
+            <p>
+                Minimum CGPA:
+                {job.Minimum_CGPA__c}
+            </p>
+
+            <p>
+                Allowed Branch:
+                {job.Allowed_Branch__c}
+            </p>
+
+            <p>
+                Allowed Backlogs:
+                {job.Allowed_Backlogs__c}
+            </p>
+
+            <p>
+                Closing Date:
+                {job.Closing_Date__c}
+            </p>
+
+            <p>
+                Status:
+                {job.Status__c}
+            </p>
+
+
+            <!-- ============================== -->
+            <!-- SUCCESS STATE -->
+            <!-- ============================== -->
+
+            <template if:true={success}>
+
+                <div class="slds-m-top_medium slds-text-color_success">
+
+                    <strong>
+                        ✓ APPLICATION SUBMITTED
+                    </strong>
+
+                    <p class="slds-m-top_x-small">
+                        Your application was submitted successfully.
+                    </p>
+
+                </div>
+
+            </template>
+
+
+            <!-- ============================== -->
+            <!-- FAILURE STATE -->
+            <!-- ============================== -->
+
+            <template if:true={failed}>
+
+                <div class="slds-m-top_medium slds-text-color_error">
+
+                    <strong>
+                        APPLICATION FAILED
+                    </strong>
+
+                    <p class="slds-m-top_x-small">
+                        {errorMessage}
+                    </p>
+
+                </div>
+
+            </template>
+
+
+            <!-- ============================== -->
+            <!-- SUBMITTING STATE -->
+            <!-- ============================== -->
+
+            <template if:true={submitting}>
+
+                <div class="slds-m-top_medium">
+
+                    <lightning-spinner
+                        alternative-text="Submitting"
+                        size="small">
+                    </lightning-spinner>
+
+                    <p class="slds-m-top_small">
+                        Submitting...
+                    </p>
+
+                    <p>
+                        Processing your application.
+                    </p>
+
+                </div>
+
+            </template>
+
+
+            <!-- ============================== -->
+            <!-- ACTION BUTTONS -->
+            <!-- ============================== -->
+
+            <template if:false={submitting}>
+
+                <template if:false={success}>
+
+                    <div class="slds-m-top_medium">
+
+                        <lightning-button
+                            label="View Details"
+                            variant="neutral"
+                            onclick={handleViewDetails}>
+                        </lightning-button>
+
+
+                        <lightning-button
+                            label="Apply"
+                            variant="brand"
+                            class="slds-m-left_small"
+                            onclick={handleApply}>
+                        </lightning-button>
+
+                    </div>
+
+                </template>
+
+            </template>
+
+        </div>
+
+    </lightning-card>
+
+</template>
