@@ -1,0 +1,179 @@
+<template>
+
+    <lightning-card>
+
+        <div class="slds-p-around_medium">
+
+
+            <!-- ================================= -->
+            <!-- JOB INFORMATION -->
+            <!-- ================================= -->
+
+            <h2
+                class="slds-text-heading_medium
+                       slds-m-bottom_small">
+
+                {job.Job_Name__c}
+
+            </h2>
+
+
+            <p class="slds-m-bottom_x-small">
+
+                <strong>Company:</strong>
+                {job.Company__c}
+
+            </p>
+
+
+            <p class="slds-m-bottom_x-small">
+
+                <strong>Minimum CGPA:</strong>
+                {job.Minimum_CGPA__c}
+
+            </p>
+
+
+            <p class="slds-m-bottom_x-small">
+
+                <strong>Allowed Branch:</strong>
+                {job.Allowed_Branch__c}
+
+            </p>
+
+
+            <p class="slds-m-bottom_x-small">
+
+                <strong>Allowed Backlogs:</strong>
+                {job.Allowed_Backlogs__c}
+
+            </p>
+
+
+            <p class="slds-m-bottom_x-small">
+
+                <strong>Closing Date:</strong>
+                {job.Closing_Date__c}
+
+            </p>
+
+
+            <p class="slds-m-bottom_medium">
+
+                <strong>Status:</strong>
+                {job.Status__c}
+
+            </p>
+
+
+            <!-- ================================= -->
+            <!-- READY -->
+            <!-- ================================= -->
+
+            <template if:true={showReadyState}>
+
+                <lightning-button
+                    label="Apply"
+                    variant="brand"
+                    onclick={handleApply}>
+                </lightning-button>
+
+            </template>
+
+
+            <!-- ================================= -->
+            <!-- SUBMITTING -->
+            <!-- ================================= -->
+
+            <template if:true={showSubmittingState}>
+
+                <div class="slds-m-top_medium">
+
+                    <lightning-spinner
+                        alternative-text="Submitting application"
+                        size="small">
+                    </lightning-spinner>
+
+                    <p class="slds-m-top_medium">
+
+                        Submitting...
+
+                    </p>
+
+                    <p>
+
+                        Processing your application.
+
+                    </p>
+
+                </div>
+
+            </template>
+
+
+            <!-- ================================= -->
+            <!-- SUCCESS -->
+            <!-- ================================= -->
+
+            <template if:true={showSuccessState}>
+
+                <div class="slds-m-top_medium">
+
+                    <p
+                        class="slds-text-heading_small
+                               slds-text-color_success">
+
+                        ✓ APPLICATION SUBMITTED
+
+                    </p>
+
+                    <p class="slds-m-top_small">
+
+                        Your application was submitted successfully.
+
+                    </p>
+
+                </div>
+
+            </template>
+
+
+            <!-- ================================= -->
+            <!-- FAILURE -->
+            <!-- ================================= -->
+
+            <template if:true={showFailureState}>
+
+                <div class="slds-m-top_medium">
+
+                    <p
+                        class="slds-text-heading_small
+                               slds-text-color_error">
+
+                        Application could not be submitted.
+
+                    </p>
+
+                    <p
+                        class="slds-m-top_small
+                               slds-text-color_error">
+
+                        {errorMessage}
+
+                    </p>
+
+                    <p class="slds-m-top_small">
+
+                        Please try again or contact the Placement Office.
+
+                    </p>
+
+                </div>
+
+            </template>
+
+        </div>
+
+    </lightning-card>
+
+</template>
