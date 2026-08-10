@@ -1,0 +1,87 @@
+<template>
+
+    <lightning-card title="Eligible Jobs">
+
+        <div class="slds-p-around_medium">
+
+
+            <!-- ================================= -->
+            <!-- ERROR -->
+            <!-- ================================= -->
+
+            <template if:true={error}>
+
+                <div
+                    class="slds-notify slds-notify_alert slds-alert_error"
+                    role="alert">
+
+                    <span class="slds-assistive-text">
+                        Error
+                    </span>
+
+                    <h2>
+                        Unable to load eligible jobs.
+                    </h2>
+
+                </div>
+
+            </template>
+
+
+            <!-- ================================= -->
+            <!-- JOB LIST -->
+            <!-- ================================= -->
+
+            <template if:true={jobs}>
+
+                <template
+                    for:each={jobs}
+                    for:item="job">
+
+                    <div
+                        key={job.Id}
+                        class="slds-m-bottom_medium">
+
+                        <c-job-card
+                            job={job}
+                            submitting={job.isSubmitting}
+                            success={job.isSuccess}
+                            failed={job.isFailed}
+                            error-message={job.errorMessage}
+                            onapply={handleApply}>
+                        </c-job-card>
+
+                    </div>
+
+                </template>
+
+            </template>
+
+
+            <!-- ================================= -->
+            <!-- EMPTY STATE -->
+            <!-- ================================= -->
+
+            <template if:false={jobs.length}>
+
+                <template if:false={error}>
+
+                    <div
+                        class="slds-align_absolute-center
+                               slds-p-around_large">
+
+                        <p>
+                            No eligible jobs are currently available.
+                        </p>
+
+                    </div>
+
+                </template>
+
+            </template>
+
+        </div>
+
+    </lightning-card>
+
+</template>
