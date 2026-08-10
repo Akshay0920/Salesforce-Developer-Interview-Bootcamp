@@ -72,7 +72,7 @@ EligibleJobs
 
 Shows the Eligible Jobs page with multiple Job Cards displayed.
 
-![Eligible Jobs](screenshots/multiple-jobs.png)
+![Eligible Jobs](Screenshots/multiple-jobs.png)
 
 ---
 
@@ -80,7 +80,7 @@ Shows the Eligible Jobs page with multiple Job Cards displayed.
 
 Shows the Job Card while the application is being submitted.
 
-![Application Loading State](screenshots/submitting.png)
+![Application Loading State](Screenshots/submitting.png)
 
 ---
 
@@ -88,7 +88,7 @@ Shows the Job Card while the application is being submitted.
 
 Shows the successful application submission message/toast.
 
-![Application Success](screenshots/success.png)
+![Application Success](Screenshots/success.png)
 
 ---
 
@@ -96,7 +96,7 @@ Shows the successful application submission message/toast.
 
 Shows the Application record created successfully in Salesforce.
 
-![Application Record](screenshots/applications-created.png)
+![Application Record](Screenshots/applications-created.png)
 
 ---
 
