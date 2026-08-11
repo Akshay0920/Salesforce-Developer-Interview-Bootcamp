@@ -30,7 +30,7 @@ The component supports:
 
 Shows the reusable Empty State component when no eligible jobs are available.
 
-![Sprint 30 Empty State](screenshots/Eligible.png)
+![Sprint 30 Empty State](Screenshots/Eligible.png)
 
 ---
 
@@ -38,7 +38,7 @@ Shows the reusable Empty State component when no eligible jobs are available.
 
 Shows the result of clicking the action button and the refresh operation.
 
-![Sprint 30 Refresh](screenshots/refresh.png)
+![Sprint 30 Refresh](Screenshots/refresh.png)
 
 ---
 
