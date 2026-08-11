@@ -1,0 +1,203 @@
+public class ApplicationService {
+
+    public static void validateApplications(List<Application__c> applications) {
+
+        // Collect Student and Job Ids
+        Set<Id> studentIds = new Set<Id>();
+        Set<Id> jobIds = new Set<Id>();
+
+        for (Application__c app : applications) {
+
+            if (app.Student__c != null) {
+                studentIds.add(app.Student__c);
+            }
+
+            if (app.Job__c != null) {
+                jobIds.add(app.Job__c);
+            }
+
+            if (app.Application_Date__c == null) {
+                app.Application_Date__c = Date.today();
+            }
+        }
+
+        // Retrieve Students
+        Map<Id, Student__c> students = new Map<Id, Student__c>([
+            SELECT Id,
+                   CGPA__c,
+                   Backlogs__c,
+                   Branch__c
+            FROM Student__c
+            WHERE Id IN :studentIds
+        ]);
+
+        // Retrieve Jobs
+        Map<Id, Job__c> jobs = new Map<Id, Job__c>([
+            SELECT Id,
+                   Minimum_CGPA__c,
+                   Allowed_Backlogs__c,
+                   Allowed_Branch__c
+            FROM Job__c
+            WHERE Id IN :jobIds
+        ]);
+
+        // Validate each Application
+        for (Application__c app : applications) {
+
+            Student__c stu = students.get(app.Student__c);
+            Job__c job = jobs.get(app.Job__c);
+
+            if (stu == null || job == null) {
+                continue;
+            }
+
+            // CGPA Validation
+            if (stu.CGPA__c < job.Minimum_CGPA__c) {
+                app.addError(
+                    'Student CGPA is below the minimum requirement.'
+                );
+            }
+
+            // Backlog Validation
+            if (stu.Backlogs__c > job.Allowed_Backlogs__c) {
+                app.addError(
+                    'Student has more backlogs than allowed.'
+                );
+            }
+
+            // Branch Validation
+            if (job.Allowed_Branch__c != null &&
+                stu.Branch__c != job.Allowed_Branch__c) {
+
+                app.addError(
+                    'Student branch is not eligible for this job.'
+                );
+            }
+        }
+    }
+
+
+    public static List<Job__c> getEligibleJobs(Id studentId) {
+
+        // Retrieve Student
+        Student__c student = [
+            SELECT Id,
+                   CGPA__c,
+                   Backlogs__c,
+                   Branch__c
+            FROM Student__c
+            WHERE Id = :studentId
+            LIMIT 1
+        ];
+
+        // Retrieve Jobs
+        List<Job__c> jobs = [
+            SELECT Id,
+                   Name,
+                   Company__c,
+                   Job_Name__c,
+                   Closing_Date__c,
+                   Minimum_CGPA__c,
+                   Allowed_Branch__c,
+                   Allowed_Backlogs__c,
+                   Status__c
+            FROM Job__c
+        ];
+
+        List<Job__c> eligibleJobs = new List<Job__c>();
+
+        // Check every Job against the Student
+        for (Job__c job : jobs) {
+
+            // CGPA
+            if (student.CGPA__c < job.Minimum_CGPA__c) {
+                continue;
+            }
+
+            // Backlogs
+            if (student.Backlogs__c > job.Allowed_Backlogs__c) {
+                continue;
+            }
+
+            // Branch
+            if (job.Allowed_Branch__c != null &&
+                student.Branch__c != job.Allowed_Branch__c) {
+
+                continue;
+            }
+
+            // Student satisfies all eligibility rules
+            eligibleJobs.add(job);
+        }
+
+        return eligibleJobs;
+    }
+
+
+    // Sprint 24 - Submit Application
+    public static Id submitApplication(Id studentId, Id jobId) {
+
+        // Validate input
+        if (studentId == null || jobId == null) {
+            throw new AuraHandledException(
+                'Student and Job are required.'
+            );
+        }
+
+        // Check whether the Student exists
+        Student__c student = [
+            SELECT Id
+            FROM Student__c
+            WHERE Id = :studentId
+            LIMIT 1
+        ];
+
+        // Check whether the Job exists
+        Job__c job = [
+            SELECT Id,
+                   Closing_Date__c
+            FROM Job__c
+            WHERE Id = :jobId
+            LIMIT 1
+        ];
+
+        // Check application deadline
+        if (job.Closing_Date__c != null &&
+            job.Closing_Date__c < Date.today()) {
+
+            throw new AuraHandledException(
+                'Applications for this job are now closed.'
+            );
+        }
+
+        // Check for duplicate application
+        List<Application__c> existingApplications = [
+            SELECT Id
+            FROM Application__c
+            WHERE Student__c = :studentId
+            AND Job__c = :jobId
+            LIMIT 1
+        ];
+
+        if (!existingApplications.isEmpty()) {
+
+            throw new AuraHandledException(
+                'You have already applied for this opportunity.'
+            );
+        }
+
+        // Create Application
+        Application__c application = new Application__c();
+
+        application.Student__c = student.Id;
+        application.Job__c = job.Id;
+        application.Application_Date__c = Date.today();
+
+        // Insert Application
+        // Existing Application Trigger will perform
+        // CGPA, backlog and branch validation.
+        insert application;
+
+        return application.Id;
+    }
+}
