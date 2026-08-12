@@ -1,0 +1,62 @@
+public with sharing class CertificationVerificationService {
+
+    @AuraEnabled
+    public static String verifyCertification(String certificationNumber) {
+
+        if (String.isBlank(certificationNumber)) {
+            throw new AuraHandledException(
+                'Certification number is required.'
+            );
+        }
+
+        HttpRequest request = new HttpRequest();
+
+        request.setEndpoint(
+            'callout:Certification_Verification_API/certifications/' +
+            EncodingUtil.urlEncode(certificationNumber, 'UTF-8')
+        );
+
+        request.setMethod('GET');
+        request.setHeader('Content-Type', 'application/json');
+        request.setTimeout(10000);
+
+        Http http = new Http();
+        HttpResponse response;
+
+        try {
+            response = http.send(request);
+        } catch (Exception e) {
+            throw new AuraHandledException(
+                'Unable to connect to certification service.'
+            );
+        }
+
+        Integer statusCode = response.getStatusCode();
+
+        if (statusCode == 200) {
+            return response.getBody();
+        }
+
+        if (statusCode == 400) {
+            throw new AuraHandledException(
+                'Invalid certification request.'
+            );
+        }
+
+        if (statusCode == 401 || statusCode == 403) {
+            throw new AuraHandledException(
+                'Certification service authentication failed.'
+            );
+        }
+
+        if (statusCode >= 500) {
+            throw new AuraHandledException(
+                'Certification service is currently unavailable.'
+            );
+        }
+
+        throw new AuraHandledException(
+            'Unexpected response from certification service.'
+        );
+    }
+}
