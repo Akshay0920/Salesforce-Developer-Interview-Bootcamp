@@ -1,0 +1,392 @@
+public class HistoricalSyncBatch
+    implements Database.Batchable<SObject>,
+               Database.AllowsCallouts {
+
+    public Database.QueryLocator start(
+        Database.BatchableContext context
+    ) {
+
+        return Database.getQueryLocator([
+
+            SELECT Id,
+                   Student__c,
+                   Job__c,
+                   Status__c,
+                   Application_Date__c,
+                   Historical_Sync_Status__c,
+                   Historical_Sync_Error__c,
+                   Historical_Sync_Last_Attempt__c,
+                   Historical_External_Id__c
+
+            FROM Application__c
+
+            WHERE Historical_Sync_Status__c != 'Sent'
+               OR Historical_Sync_Status__c = NULL
+
+        ]);
+
+    }
+
+
+    public void execute(
+        Database.BatchableContext context,
+        List<Application__c> scope
+    ) {
+
+        List<Application__c> applicationsToUpdate =
+            new List<Application__c>();
+
+
+        // =========================================
+        // PROCESS EACH APPLICATION
+        // =========================================
+
+        for (
+            Application__c application :
+            scope
+        ) {
+
+            Boolean success = false;
+
+            String errorMessage;
+
+            String externalId;
+
+
+            // =========================================
+            // BUILD REQUEST
+            // =========================================
+
+            Map<String, Object> data =
+                new Map<String, Object>();
+
+
+            data.put(
+                'applicationId',
+                String.valueOf(application.Id)
+            );
+
+            data.put(
+                'studentId',
+                application.Student__c != null
+                    ? String.valueOf(application.Student__c)
+                    : null
+            );
+
+            data.put(
+                'jobId',
+                application.Job__c != null
+                    ? String.valueOf(application.Job__c)
+                    : null
+            );
+
+            data.put(
+                'status',
+                application.Status__c
+            );
+
+            data.put(
+                'applicationDate',
+                application.Application_Date__c != null
+                    ? String.valueOf(
+                        application.Application_Date__c
+                    )
+                    : null
+            );
+
+
+            String requestBody =
+                JSON.serialize(data);
+
+
+            // =========================================
+            // FIRST ATTEMPT
+            // =========================================
+
+            HttpResponse response =
+                sendRequest(requestBody);
+
+
+            if (response != null) {
+
+                Integer statusCode =
+                    response.getStatusCode();
+
+
+                if (
+                    statusCode == 200
+                    ||
+                    statusCode == 201
+                ) {
+
+                    success = true;
+
+                    Map<String, Object> responseData =
+                        (Map<String, Object>)
+                        JSON.deserializeUntyped(
+                            response.getBody()
+                        );
+
+
+                    if (
+                        responseData.containsKey(
+                            'externalId'
+                        )
+                    ) {
+
+                        externalId =
+                            String.valueOf(
+                                responseData.get(
+                                    'externalId'
+                                )
+                            );
+
+                    }
+
+                }
+                else {
+
+                    errorMessage =
+                        'HTTP '
+                        + statusCode
+                        + ': '
+                        + response.getBody();
+
+                }
+
+            }
+
+
+            // =========================================
+            // RETRY TEMPORARY FAILURE
+            // =========================================
+
+            if (
+                !success
+                &&
+                isRetryable(errorMessage)
+            ) {
+
+                HttpResponse retryResponse =
+                    sendRequest(requestBody);
+
+
+                if (
+                    retryResponse != null
+                    &&
+                    (
+                        retryResponse.getStatusCode() == 200
+                        ||
+                        retryResponse.getStatusCode() == 201
+                    )
+                ) {
+
+                    success = true;
+
+
+                    Map<String, Object> retryData =
+                        (Map<String, Object>)
+                        JSON.deserializeUntyped(
+                            retryResponse.getBody()
+                        );
+
+
+                    if (
+                        retryData.containsKey(
+                            'externalId'
+                        )
+                    ) {
+
+                        externalId =
+                            String.valueOf(
+                                retryData.get(
+                                    'externalId'
+                                )
+                            );
+
+                    }
+
+                }
+                else {
+
+                    errorMessage =
+                        'Retry failed: '
+                        + (
+                            retryResponse != null
+                            ? 'HTTP '
+                                + retryResponse.getStatusCode()
+                                + ': '
+                                + retryResponse.getBody()
+                            : 'No response'
+                        );
+
+                }
+
+            }
+
+
+            // =========================================
+            // PREPARE RESULT
+            // =========================================
+
+            application.Historical_Sync_Last_Attempt__c =
+                System.now();
+
+
+            if (success) {
+
+                application.Historical_Sync_Status__c =
+                    'Sent';
+
+                application.Historical_Sync_Error__c =
+                    null;
+
+                application.Historical_External_Id__c =
+                    externalId;
+
+            }
+            else {
+
+                application.Historical_Sync_Status__c =
+                    'Failed';
+
+                application.Historical_Sync_Error__c =
+                    errorMessage;
+
+            }
+
+
+            applicationsToUpdate.add(
+                application
+            );
+
+        }
+
+
+        // =========================================
+        // BULK UPDATE
+        // =========================================
+
+        if (
+            !applicationsToUpdate.isEmpty()
+        ) {
+
+            Database.update(
+                applicationsToUpdate,
+                false
+            );
+
+        }
+
+    }
+
+
+    // =========================================
+    // HTTP REQUEST
+    // =========================================
+
+    private static HttpResponse sendRequest(
+        String requestBody
+    ) {
+
+        try {
+
+            HttpRequest request =
+                new HttpRequest();
+
+
+            request.setEndpoint(
+                'callout:Historical_Sync_API/sync'
+            );
+
+
+            request.setMethod(
+                'POST'
+            );
+
+
+            request.setHeader(
+                'Content-Type',
+                'application/json'
+            );
+
+
+            request.setBody(
+                requestBody
+            );
+
+
+            request.setTimeout(
+                10000
+            );
+
+
+            Http http =
+                new Http();
+
+
+            return http.send(request);
+
+        }
+        catch (Exception error) {
+
+            System.debug(
+                'Historical sync callout failed: '
+                + error.getMessage()
+            );
+
+            return null;
+
+        }
+
+    }
+
+
+    // =========================================
+    // RETRYABLE ERROR CHECK
+    // =========================================
+
+    private static Boolean isRetryable(
+        String errorMessage
+    ) {
+
+        if (
+            String.isBlank(errorMessage)
+        ) {
+
+            return false;
+
+        }
+
+
+        return
+            errorMessage.contains('HTTP 408')
+            ||
+            errorMessage.contains('HTTP 429')
+            ||
+            errorMessage.contains('HTTP 500')
+            ||
+            errorMessage.contains('HTTP 502')
+            ||
+            errorMessage.contains('HTTP 503')
+            ||
+            errorMessage.contains('HTTP 504');
+
+    }
+
+
+    // =========================================
+    // FINISH
+    // =========================================
+
+    public void finish(
+        Database.BatchableContext context
+    ) {
+
+        System.debug(
+            'Historical synchronization batch completed.'
+        );
+
+    }
+
+}
