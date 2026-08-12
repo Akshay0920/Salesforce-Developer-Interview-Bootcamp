@@ -1,0 +1,59 @@
+trigger ApplicationTrigger on Application__c (
+    before insert,
+    before update,
+    after update
+) {
+
+    // =========================================
+    // BEFORE INSERT
+    // =========================================
+
+    if (
+        Trigger.isBefore &&
+        Trigger.isInsert
+    ) {
+
+        ApplicationService.validateApplications(
+            Trigger.new
+        );
+
+    }
+
+
+    // =========================================
+    // BEFORE UPDATE
+    // Set Integration Status = Pending
+    // when Application becomes Selected
+    // =========================================
+
+    if (
+        Trigger.isBefore &&
+        Trigger.isUpdate
+    ) {
+
+        ApplicationTriggerHandler.beforeUpdate(
+            Trigger.new,
+            Trigger.oldMap
+        );
+
+    }
+
+
+    // =========================================
+    // AFTER UPDATE
+    // Process newly Selected Applications
+    // =========================================
+
+    if (
+        Trigger.isAfter &&
+        Trigger.isUpdate
+    ) {
+
+        ApplicationTriggerHandler.afterUpdate(
+            Trigger.new,
+            Trigger.oldMap
+        );
+
+    }
+
+}
