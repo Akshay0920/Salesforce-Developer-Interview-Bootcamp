@@ -1,0 +1,523 @@
+public class CandidateSyncQueueable
+    implements Queueable, Database.AllowsCallouts {
+
+    private Id applicationId;
+    private Boolean isRetry;
+
+
+    // =========================================
+    // CONSTRUCTOR
+    // =========================================
+
+    public CandidateSyncQueueable(
+        Id applicationId
+    ) {
+
+        this(
+            applicationId,
+            false
+        );
+
+    }
+
+
+    // =========================================
+    // RETRY CONSTRUCTOR
+    // =========================================
+
+    public CandidateSyncQueueable(
+        Id applicationId,
+        Boolean isRetry
+    ) {
+
+        this.applicationId =
+            applicationId;
+
+        this.isRetry =
+            isRetry;
+
+    }
+
+
+    // =========================================
+    // EXECUTE
+    // =========================================
+
+    public void execute(
+        QueueableContext context
+    ) {
+
+        Application__c application = [
+
+            SELECT Id,
+                   Student__c,
+                   Job__c,
+                   Status__c,
+                   Integration_Status__c,
+                   External_Candidate_Id__c,
+                   Last_Integration_Attempt__c,
+                   Integration_Error__c
+
+            FROM Application__c
+
+            WHERE Id = :applicationId
+
+            LIMIT 1
+
+        ];
+
+
+        // =========================================
+        // ONLY SELECTED APPLICATIONS
+        // =========================================
+
+        if (
+            application.Status__c
+            != 'Selected'
+        ) {
+
+            System.debug(
+                'Application is not Selected. '
+                + 'Sync skipped.'
+            );
+
+            return;
+
+        }
+
+
+        try {
+
+            // =========================================
+            // GET STUDENT
+            // =========================================
+
+            Student__c student = [
+
+                SELECT Id,
+                       Student_Name__c,
+                       Email__c,
+                       Branch__c,
+                       CGPA__c
+
+                FROM Student__c
+
+                WHERE Id = :application.Student__c
+
+                LIMIT 1
+
+            ];
+
+
+            // =========================================
+            // GET JOB
+            // =========================================
+
+            Job__c job = [
+
+                SELECT Id,
+                       Company__c,
+                       Job_Name__c
+
+                FROM Job__c
+
+                WHERE Id = :application.Job__c
+
+                LIMIT 1
+
+            ];
+
+
+            // =========================================
+            // BUILD CANDIDATE DATA
+            // =========================================
+
+            Map<String, Object> candidateData =
+                new Map<String, Object>();
+
+
+            // Idempotency reference
+            candidateData.put(
+                'applicationId',
+                String.valueOf(application.Id)
+            );
+
+
+            candidateData.put(
+                'studentId',
+                String.valueOf(student.Id)
+            );
+
+
+            candidateData.put(
+                'name',
+                student.Student_Name__c
+            );
+
+
+            candidateData.put(
+                'email',
+                student.Email__c
+            );
+
+
+            candidateData.put(
+                'branch',
+                student.Branch__c
+            );
+
+
+            candidateData.put(
+                'cgpa',
+                student.CGPA__c
+            );
+
+
+            candidateData.put(
+                'jobId',
+                String.valueOf(job.Id)
+            );
+
+
+            candidateData.put(
+                'company',
+                job.Company__c
+            );
+
+
+            candidateData.put(
+                'role',
+                job.Job_Name__c
+            );
+
+
+            candidateData.put(
+                'selectionDate',
+                String.valueOf(Date.today())
+            );
+
+
+            // =========================================
+            // CONVERT TO JSON
+            // =========================================
+
+            String requestBody =
+                JSON.serialize(
+                    candidateData
+                );
+
+
+            System.debug(
+                'Candidate Request: '
+                + requestBody
+            );
+
+
+            // =========================================
+            // HTTP REQUEST
+            // =========================================
+
+            HttpRequest request =
+                new HttpRequest();
+
+
+            request.setEndpoint(
+                'callout:Recruitment_API/candidates'
+            );
+
+
+            request.setMethod(
+                'POST'
+            );
+
+
+            request.setHeader(
+                'Content-Type',
+                'application/json'
+            );
+
+
+            request.setBody(
+                requestBody
+            );
+
+
+            // =========================================
+            // SEND HTTP REQUEST
+            // =========================================
+
+            Http http =
+                new Http();
+
+
+            HttpResponse response =
+                http.send(request);
+
+
+            Integer statusCode =
+                response.getStatusCode();
+
+
+            String responseBody =
+                response.getBody();
+
+
+            System.debug(
+                'HTTP Status: '
+                + statusCode
+            );
+
+
+            System.debug(
+                'HTTP Response: '
+                + responseBody
+            );
+
+
+            // =========================================
+            // SUCCESS — 200
+            // =========================================
+
+            if (
+                statusCode == 200
+            ) {
+
+                Map<String, Object> responseData =
+                    (Map<String, Object>)
+                    JSON.deserializeUntyped(
+                        responseBody
+                    );
+
+
+                application.Integration_Status__c =
+                    'Sent';
+
+
+                application.Last_Integration_Attempt__c =
+                    DateTime.now();
+
+
+                application.Integration_Error__c =
+                    null;
+
+
+                // External Candidate Id
+                if (
+                    responseData.containsKey(
+                        'externalCandidateId'
+                    )
+                ) {
+
+                    application.External_Candidate_Id__c =
+                        String.valueOf(
+                            responseData.get(
+                                'externalCandidateId'
+                            )
+                        );
+
+                }
+
+
+                update application;
+
+
+                System.debug(
+                    'Candidate successfully synchronized.'
+                );
+
+
+                return;
+
+            }
+
+
+            // =========================================
+            // CLIENT ERRORS
+            // =========================================
+
+            if (
+                statusCode == 400
+                ||
+                statusCode == 401
+                ||
+                statusCode == 403
+            ) {
+
+                application.Integration_Status__c =
+                    'Failed';
+
+
+                application.Last_Integration_Attempt__c =
+                    DateTime.now();
+
+
+                application.Integration_Error__c =
+                    'HTTP '
+                    + statusCode
+                    + ': '
+                    + responseBody;
+
+
+                update application;
+
+
+                System.debug(
+                    'Permanent integration failure: '
+                    + statusCode
+                );
+
+
+                return;
+
+            }
+
+
+            // =========================================
+            // SERVER ERRORS
+            // =========================================
+
+            if (
+                statusCode >= 500
+                &&
+                statusCode <= 599
+            ) {
+
+                handleRetry(
+                    application,
+                    'HTTP '
+                    + statusCode
+                    + ': '
+                    + responseBody
+                );
+
+
+                return;
+
+            }
+
+
+            // =========================================
+            // UNEXPECTED RESPONSE
+            // =========================================
+
+            application.Integration_Status__c =
+                'Failed';
+
+
+            application.Last_Integration_Attempt__c =
+                DateTime.now();
+
+
+            application.Integration_Error__c =
+                'Unexpected HTTP status '
+                + statusCode
+                + ': '
+                + responseBody;
+
+
+            update application;
+
+
+            System.debug(
+                'Unexpected HTTP response: '
+                + statusCode
+            );
+
+        }
+
+
+        // =========================================
+        // CALLOUT / PROCESSING EXCEPTION
+        // =========================================
+
+        catch (Exception error) {
+
+            handleRetry(
+                application,
+                'Integration Exception: '
+                + error.getMessage()
+            );
+
+        }
+
+    }
+
+
+    // =========================================
+    // RETRY HANDLER
+    // =========================================
+
+    private void handleRetry(
+        Application__c application,
+        String errorMessage
+    ) {
+
+        // =========================================
+        // FIRST ATTEMPT FAILED
+        // =========================================
+
+        if (!isRetry) {
+
+            application.Integration_Status__c =
+                'Retry Required';
+
+
+            application.Last_Integration_Attempt__c =
+                DateTime.now();
+
+
+            application.Integration_Error__c =
+                errorMessage;
+
+
+            update application;
+
+
+            System.debug(
+                'First integration attempt failed. '
+                + 'Scheduling one retry.'
+            );
+
+
+            // Schedule exactly one retry
+            System.enqueueJob(
+                new CandidateSyncQueueable(
+                    application.Id,
+                    true
+                )
+            );
+
+
+            return;
+
+        }
+
+
+        // =========================================
+        // RETRY FAILED
+        // =========================================
+
+        application.Integration_Status__c =
+            'Failed';
+
+
+        application.Last_Integration_Attempt__c =
+            DateTime.now();
+
+
+        application.Integration_Error__c =
+            'Retry failed: '
+            + errorMessage;
+
+
+        update application;
+
+
+        System.debug(
+            'Retry failed. '
+            + 'No further retries will be attempted.'
+        );
+
+    }
+
+}
