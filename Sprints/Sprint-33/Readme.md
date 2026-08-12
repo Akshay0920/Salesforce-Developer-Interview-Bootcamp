@@ -1,81 +1,102 @@
-# Sprint 32 — External Recruitment API Integration
+# Sprint 33 — Integration Reliability Challenge
 
 ## Overview
 
-Sprint 32 focused on integrating the Salesforce Placement Management System with an external recruitment platform.
+Sprint 33 extends the external recruitment integration developed in Sprint 32.
 
-When a student's Application status changes to **Selected**, Salesforce automatically sends the selected candidate's information to an external recruitment API.
+The objective of this sprint is to make the Candidate Sync integration reliable when communicating with an external recruitment system.
 
-The integration uses:
+The system must:
 
-- Apex Trigger
-- Apex Trigger Handler
-- Queueable Apex
-- HTTP Callouts
-- Named Credential
-- External Credential
-- Permission Set
-- Mock REST API using Beeceptor
-- Retry handling
-- Idempotency using Application Id
-- Integration status tracking
-
-The integration was designed to run asynchronously so that the Application update process is not blocked by the external API call.
+- Track integration status
+- Store the external candidate reference
+- Record the last integration attempt
+- Record integration errors
+- Handle successful and failed API responses
+- Support retry processing for temporary failures
+- Prevent duplicate candidate submissions
+- Allow administrators to identify failed integrations
+- Document the API contract and integration architecture
 
 ---
 
-## Objectives
+# Business Problem
 
-- Integrate Salesforce with an external recruitment API
-- Automatically synchronize selected candidates
-- Use Queueable Apex for asynchronous processing
-- Perform HTTP POST callouts
-- Use Named Credentials instead of hard-coding API URLs
-- Use External Credentials for authentication configuration
-- Handle successful API responses
-- Handle client-side errors
-- Handle server-side errors
-- Implement retry handling
-- Prevent uncontrolled retry loops
-- Implement idempotency using Application Id
-- Store external candidate identifiers
-- Track integration status
-- Track integration errors
-- Track the last integration attempt
-- Test the complete integration flow
+When a student is selected for a job, the Placement Management System must send the student's candidate information to an external recruitment platform.
+
+The Salesforce transaction and the external recruitment system are separate systems.
+
+Therefore:
+
+Salesforce business success does not automatically mean external integration success.
+
+The system must track the external synchronization separately so that administrators know whether a selected candidate was successfully sent, requires a retry, or failed permanently.
 
 ---
 
 ## Screenshots
 
-### Screenshot 1 — Successful Integration
+### 1. Failed Integrations
 
-![Successful Integration](screenshots/integration.png)
+![Failed Integration](screenshots/failed.png)
 
-### Screenshot 2 — Beeceptor API Request
 
-![Beeceptor API Request](screenshots/api.png)
+### 2. Apex Jobs
+
+![Apex Jobs](screenshots/apex-jobs.png)
+
+
+### 3. Successful Integration
+
+![Successful Integration](screenshots/attempt.png)
 
 ---
 
-# Conclusion
+# External System
 
-Sprint 32 completed the external integration layer of the Salesforce Placement Management System.
+A mock REST API was used for this project instead of a real recruitment platform.
 
-The system now supports:
+The mock API was created using Beeceptor.
 
-Selected Application  
-↓  
-Automatic Integration  
-↓  
-External Recruitment API  
-↓  
-Candidate Registration  
-↓  
-External Candidate ID  
-↓  
-Integration Status  
-↓  
-Success / Retry / Failure Tracking
+Base URL:
 
-This demonstrates how Salesforce can securely and asynchronously communicate with an external recruitment platform using Apex, Queueable Apex, Named Credentials, External Credentials, HTTP Callouts, retry handling, and idempotency.
+https://akshay-recruitment-api.free.beeceptor.com
+
+Endpoint:
+
+POST /candidates
+
+Complete endpoint:
+
+https://akshay-recruitment-api.free.beeceptor.com/candidates
+
+The mock API allows the Salesforce integration to be tested without depending on a production recruitment platform.
+
+---
+
+# Key Learning
+
+The most important lesson from Sprint 33 is that integration engineering is not simply about sending an HTTP request.
+
+A reliable integration must consider:
+
+- Authentication
+- API contracts
+- Errors
+- Retries
+- Duplicates
+- Idempotency
+- Monitoring
+- Logging
+- Asynchronous processing
+- Failure recovery
+
+The external system is outside Salesforce's control, so the integration must be designed for situations where the external service is slow, unavailable, incorrectly configured, overloaded, or returns unexpected responses.
+
+---
+
+# Sprint Status
+
+**Sprint 33 — Completed**
+
+The Placement Management System can now send selected candidates to the external recruitment platform while tracking integration state, handling temporary failures, preventing duplicate submissions, recording errors, and providing administrators with visibility into failed integrations.
