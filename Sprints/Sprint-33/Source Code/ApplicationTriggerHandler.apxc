@@ -1,0 +1,268 @@
+public class ApplicationTriggerHandler {
+
+
+    // =========================================
+    // BEFORE UPDATE
+    // Set integration status to Pending
+    // when Application becomes Selected
+    // =========================================
+
+    public static void beforeUpdate(
+        List<Application__c> newApplications,
+        Map<Id, Application__c> oldMap
+    ) {
+
+        for (
+            Application__c app :
+            newApplications
+        ) {
+
+            Application__c oldApp =
+                oldMap.get(app.Id);
+
+
+            // Application has just become Selected
+            if (
+                oldApp.Status__c != 'Selected'
+                &&
+                app.Status__c == 'Selected'
+            ) {
+
+                // Only set Pending if it has
+                // not already been synchronized
+                if (
+                    String.isBlank(
+                        app.External_Candidate_Id__c
+                    )
+                ) {
+
+                    app.Integration_Status__c =
+                        'Pending';
+
+                    app.Integration_Error__c =
+                        null;
+
+                }
+
+            }
+
+        }
+
+    }
+
+
+    // =========================================
+    // AFTER UPDATE
+    // =========================================
+
+    public static void afterUpdate(
+        List<Application__c> newApplications,
+        Map<Id, Application__c> oldMap
+    ) {
+
+        Set<Id> studentIds =
+            new Set<Id>();
+
+        Set<Id> jobIds =
+            new Set<Id>();
+
+        List<Id> selectedApplicationIds =
+            new List<Id>();
+
+
+        // =========================================
+        // FIND NEWLY SELECTED APPLICATIONS
+        // =========================================
+
+        for (
+            Application__c app :
+            newApplications
+        ) {
+
+            Application__c oldApp =
+                oldMap.get(app.Id);
+
+
+            if (
+                oldApp.Status__c != 'Selected'
+                &&
+                app.Status__c == 'Selected'
+            ) {
+
+                if (
+                    app.Student__c != null
+                ) {
+
+                    studentIds.add(
+                        app.Student__c
+                    );
+
+                }
+
+
+                if (
+                    app.Job__c != null
+                ) {
+
+                    jobIds.add(
+                        app.Job__c
+                    );
+
+                }
+
+            }
+
+        }
+
+
+        if (
+            studentIds.isEmpty()
+        ) {
+
+            return;
+
+        }
+
+
+        // =========================================
+        // GET STUDENTS
+        // =========================================
+
+        Map<Id, Student__c> students =
+            new Map<Id, Student__c>([
+
+                SELECT Id,
+                       Placement_Status__c,
+                       Company__c
+
+                FROM Student__c
+
+                WHERE Id IN :studentIds
+
+            ]);
+
+
+        // =========================================
+        // GET JOBS
+        // =========================================
+
+        Map<Id, Job__c> jobs =
+            new Map<Id, Job__c>([
+
+                SELECT Id,
+                       Company__c
+
+                FROM Job__c
+
+                WHERE Id IN :jobIds
+
+            ]);
+
+
+        List<Student__c> studentsToUpdate =
+            new List<Student__c>();
+
+
+        // =========================================
+        // UPDATE STUDENT + PREPARE QUEUEABLE
+        // =========================================
+
+        for (
+            Application__c app :
+            newApplications
+        ) {
+
+            Application__c oldApp =
+                oldMap.get(app.Id);
+
+
+            if (
+                oldApp.Status__c != 'Selected'
+                &&
+                app.Status__c == 'Selected'
+            ) {
+
+                Student__c student =
+                    students.get(
+                        app.Student__c
+                    );
+
+                Job__c job =
+                    jobs.get(
+                        app.Job__c
+                    );
+
+
+                if (
+                    student != null &&
+                    job != null
+                ) {
+
+                    student.Placement_Status__c =
+                        'Placed';
+
+                    student.Company__c =
+                        job.Company__c;
+
+
+                    studentsToUpdate.add(
+                        student
+                    );
+
+
+                    // =================================
+                    // DUPLICATE PROTECTION
+                    // =================================
+
+                    if (
+                        String.isBlank(
+                            app.External_Candidate_Id__c
+                        )
+                    ) {
+
+                        selectedApplicationIds.add(
+                            app.Id
+                        );
+
+                    }
+
+                }
+
+            }
+
+        }
+
+
+        // =========================================
+        // SAVE STUDENT CHANGES
+        // =========================================
+
+        if (
+            !studentsToUpdate.isEmpty()
+        ) {
+
+            update studentsToUpdate;
+
+        }
+
+
+        // =========================================
+        // QUEUE CANDIDATE SYNC
+        // =========================================
+
+        for (
+            Id applicationId :
+            selectedApplicationIds
+        ) {
+
+            System.enqueueJob(
+                new CandidateSyncQueueable(
+                    applicationId
+                )
+            );
+
+        }
+
+    }
+
+}
